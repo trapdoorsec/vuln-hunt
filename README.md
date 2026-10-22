@@ -16,10 +16,6 @@ blocks/FFI. It is deliberately skipped for memory-safe languages (Python, Go, Ru
 Java, JS). Everything else (XSS, SQLi, CSRF, business logic, etc.) is intentionally out of
 scope unless it directly enables one of the classes above.
 
-The repo also contains a **firmware / device reverse-engineering** track for when the
-target is a binary image rather than source: vendor-neutral unpacking and analysis, plus
-FortiGate and Ubiquiti UniFi playbooks.
-
 ## Skill layout
 
 ### Source-code hunting
@@ -43,37 +39,6 @@ vuln-hunt-python/          # Python
 vuln-hunt-go/              # Go
 vuln-hunt-ruby/            # Ruby (incl. Rails)
 ```
-
-### Firmware / device reverse engineering
-
-```
-reverse-engineer/          # vendor-neutral entry point
-  SKILL.md                 # acquire → verify → unpack → map → analyze → emulate → report
-  references/
-    unpacking.md           # squashfs, UBI, JFFS2, cramfs, cpio, disk images, vendor/encrypted
-    static-dynamic.md      # binary triage, attack surface, qemu-user/system, GDB
-  scripts/
-    triage.sh              # hash, file type, entropy, magic offsets, version strings
-
-reverse-engineer-fortinet/ # FortiGate / FortiOS (qcow2, flatkc, rootfs, crypto, DAST)
-  SKILL.md
-  references/
-    toolchain.md           # Arch Linux packages and quick check
-    report-template.md     # Fortinet PSIRT-style finding template
-  scripts/
-    check-toolchain.sh
-
-unifi-extractor/           # Ubiquiti UniFi firmware .bin / controller .deb
-  SKILL.md
-  scripts/
-    extract.py
-```
-
-The generic `reverse-engineer` skill is the entry point and routes to the vendor playbooks:
-FortiGate → `reverse-engineer-fortinet`, UniFi → `unifi-extractor`, patch comparison →
-`patch-diff` (when present), source audit → `vuln-hunt`, and reporting → `bounty-report` /
-`report-gen` (when present).
-
 ## Installation
 
 Copy (or symlink) the skill directories into your OpenCode skills directory:
@@ -82,7 +47,6 @@ Copy (or symlink) the skill directories into your OpenCode skills directory:
 # Default location (Linux/macOS)
 mkdir -p ~/.config/opencode/skills
 cp -R vuln-hunt vuln-hunt-* \
-      reverse-engineer reverse-engineer-* unifi-extractor \
       ~/.config/opencode/skills/
 ```
 
@@ -116,34 +80,6 @@ helper (e.g. `vuln-hunt-go` for a Go codebase). You can also use a helper direct
 ```
 @vuln-hunt-python
 ```
-
-### Firmware and device RE
-
-Use the generic skill for any router, IoT, camera, or NAS image:
-
-```
-@reverse-engineer
-```
-
-or describe the task, e.g. *"unpack this firmware and map the web attack surface"*. The
-skill picks the container format, extracts the rootfs, and walks the analysis workflow.
-For vendor-specific layouts, load the matching playbook directly:
-
-| Target | Skill |
-|--------|-------|
-| FortiGate / FortiOS | `@reverse-engineer-fortinet` |
-| Ubiquiti UniFi | `@unifi-extractor` |
-
-Start with the triage script to confirm you have the right build and region:
-
-```sh
-./reverse-engineer/scripts/triage.sh /path/to/firmware.bin ./triage
-```
-
-It writes a report with the SHA-256, file type, entropy, filesystem magic offsets, and
-version strings — enough to catch a wrong-region or wrong-revision image before analysis
-begins. Keep originals under `firmware/` and extracted trees under `extracted/`, one
-directory per target/version.
 
 ## How the source-code workflow runs
 
